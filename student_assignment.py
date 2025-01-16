@@ -37,7 +37,10 @@ def generate_hw01(question):
     prompt = ChatPromptTemplate.from_messages(
         [("system", hw01_system_prompt), ("human", "{question}")]
     )
-    return llm.invoke(prompt.format(question=question, format=hw01_json_format))
+    content = llm.invoke(
+        prompt.format(question=question, format=hw01_json_format)
+    ).content
+    return str(content)
 
 
 def generate_hw02(question):
@@ -64,5 +67,5 @@ def demo(question):
 
 if __name__ == "__main__":
     print("main function start")
-    pass
+    print(generate_hw01("2024年台灣10月紀念日有哪些?"))
     print("main function ends")
