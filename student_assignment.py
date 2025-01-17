@@ -3,6 +3,8 @@ from typing import Optional, Type
 import json
 import traceback
 import re
+import base64
+from mimetypes import guess_type
 
 from model_configurations import get_model_configuration
 
@@ -42,6 +44,16 @@ Format requirement:
 - Replay in Traditional Chinese (zh-TW)
 - Reply in JSON format.
 - The JSON format is `{"Result":[{"date":"YYYY-MM-DD","name":"(name of the day)"}]}`
+- Format the JSON output with indent of 4 spaces
+- REPLY JSON ONLY. DO NOT REPLY WITH MARKDOWN CODE BLOCK SYNTEX.
+"""
+
+hw04_system_prompt = """
+Please reply my questions.
+Format requirement:
+- Replay in Traditional Chinese (zh-TW)
+- Reply in JSON format.
+- The JSON format is `{"Result":{"score":"integer: score you read from the given input"}}`
 - Format the JSON output with indent of 4 spaces
 - REPLY JSON ONLY. DO NOT REPLY WITH MARKDOWN CODE BLOCK SYNTEX.
 """
@@ -169,8 +181,44 @@ def generate_hw03(question2, question3):
     return str(response2["output"])
 
 
+# Function to encode a local image into data URL.
+# From: https://learn.microsoft.com/zh-tw/azure/ai-services/openai/how-to/gpt-with-vision?tabs=python
+def local_image_to_data_url(image_path):
+    # Guess the MIME type of the image based on the file extension
+    mime_type, _ = guess_type(image_path)
+    if mime_type is None:
+        mime_type = "application/octet-stream"  # Default MIME type if none is found
+
+    # Read and encode the image file
+    with open(image_path, "rb") as image_file:
+        base64_encoded_data = base64.b64encode(image_file.read()).decode("utf-8")
+
+    # Construct the data URL
+    return f"data:{mime_type};base64,{base64_encoded_data}"
+
+
 def generate_hw04(question):
-    pass
+    image_path = r"baseball.png"
+    image_data_url = local_image_to_data_url(image_path)
+    # print("Data URL:", image_data_url)
+    llm = get_llm()
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", hw04_system_prompt),
+            (
+                "user",
+                [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_data_url},
+                    }
+                ],
+            ),
+            ("human", "{question}"),
+        ]
+    )
+    response = llm.invoke(prompt.format(question=question))
+    print(response)
 
 
 def demo(question):
@@ -188,10 +236,11 @@ if __name__ == "__main__":
     # print(generate_hw01("2024年台灣10月紀念日有哪些?"))
     # print(getHolidaysFromRemoteApi(2023, 10))
     # print(generate_hw02("2022年台灣10月紀念日有哪些?"))
-    print(
-        generate_hw03(
-            """2024年台灣10月紀念日有哪些?""",
-            """根據先前的節日清單，這個節日{"date": "10-31", "name": "蔣公誕辰紀念日"}是否有在該月份清單？""",
-        )
-    )
+    # print(
+    #     generate_hw03(
+    #         """2024年台灣10月紀念日有哪些?""",
+    #         """根據先前的節日清單，這個節日{"date": "10-31", "name": "蔣公誕辰紀念日"}是否有在該月份清單？""",
+    #     )
+    # )
+    print(generate_hw04("請問中華台北的積分是多少"))
     print("====main function ends====")
