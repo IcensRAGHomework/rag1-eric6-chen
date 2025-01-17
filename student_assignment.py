@@ -59,7 +59,7 @@ Format requirement:
 """
 
 hw04_format = """
-`{"Result":{"score":"integer: score you read from the given input"}}`
+`{"Result":{"score":<score you read from the given input.>}}`
 """
 
 
@@ -236,7 +236,7 @@ def demo(question):
 
 
 if __name__ == "__main__":
-    print("====main function start====")
+    print("====main function started====")
     # print(generate_hw01("2024年台灣10月紀念日有哪些?"))
     # print(getHolidaysFromRemoteApi(2023, 10))
     # print(generate_hw02("2022年台灣10月紀念日有哪些?"))
