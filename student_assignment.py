@@ -41,7 +41,7 @@ Please reply my questions. Not only reply tool outputs.
 Format requirement:
 - Replay in Traditional Chinese (zh-TW)
 - Reply in JSON format.
-- The JSON format is `{{"Result":[{{"date":"YYYY-MM-DD","name":"(name of the day)"}}]}}`
+- The JSON format is `{"Result":[{"date":"YYYY-MM-DD","name":"(name of the day)"}]}`
 - Format the JSON output with indent of 4 spaces
 - REPLY JSON ONLY. DO NOT REPLY WITH MARKDOWN CODE BLOCK SYNTEX.
 """
@@ -65,55 +65,36 @@ def generate_hw01(question):
     return str(content)
 
 
-class HolidayApiInput(BaseModel):
-    year: str = Field(description="year of the request holiday info")
-    month: str = Field(description="month of the request holiday info")
-
-
-# Note: It's important that every field has type hints. BaseTool is a
-# Pydantic class and not having type hints can lead to unexpected behavior.
-class HolidayApiTool(BaseTool):
-    name: str = "HolidayAPI"
-    description: str = "Get holiday info from a remote API"
-    args_schema: Type[BaseModel] = HolidayApiInput
-    return_direct: bool = True
-
-    def _run(
-        self,
-        year: str,
-        month: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        return "result of the remote api is: " + getHolidaysFromRemoteApi(year, month)
-
-    async def _arun(
-        self,
-        year: str,
-        month: str,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
-        """Use the tool asynchronously."""
-        return self._run(year, month, run_manager=run_manager.get_sync())
-
-
-def getHolidaysFromRemoteApi(year: str, month: str) -> str:
+def get_holiday_info_remote(year: str, month: str) -> str:
     """
     Request holiday info from remote API and make it a eazy format for LLM to take as input.
     return: json `{"Result":[{"date":"YYYY-MM-DD","name":"(name of the day)"}]}`
     """
-    if False:  # debugging
-        return "getHolidaysFromRemoteApi stub"
     # key will be dispose once result is pass.
-    api_key = "A6tmd6HZ5QaEwBwINmO2f0TTrd3rSVUq"
+    api_key = "uWtaqONZuC6YAJ1bAHFgXHD3Y2qC0wNF"
     api_end_point = f"https://calendarific.com/api/v2/holidays?&api_key={api_key}&country=tw&year={year}&month={month}"
     api_end_point.format()
     json_responce = requests.get(api_end_point).json()
-    # if True:  # debug: no extra formatting
-    # return str(json_responce)
     result = []
     for holiday in json_responce["response"]["holidays"]:
         result.append({"name": holiday["name"], "date": holiday["date"]["iso"]})
     return json.dumps(result, indent=4)
+
+
+def tool_get_holiday_info():
+    def get_haliday_info(year: int, month: int) -> str:
+        return get_holiday_info_remote(str(year), str(month))
+
+    class GetHoliday(BaseModel):
+        year: int = Field(description="specific year")
+        month: int = Field(description="specific month")
+
+    return StructuredTool.from_function(
+        name="get_haliday_info",
+        description="Query holidays for specific year and month",
+        func=get_haliday_info,
+        args_schema=GetHoliday,
+    )
 
 
 def generate_hw02(question):
@@ -125,7 +106,8 @@ def generate_hw02(question):
         azure_endpoint=gpt_config["api_base"],
         temperature=gpt_config["temperature"],
     )
-    tools = [HolidayApiTool()]
+    tools = [tool_get_holiday_info()]
+    # prompt mod from https://smith.langchain.com/hub/hwchase17/openai-functions-agent
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", "You are a helpful assistant"),
@@ -136,11 +118,9 @@ def generate_hw02(question):
         ]
     )
     agent = create_openai_functions_agent(llm=llm, tools=tools, prompt=prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, prompt=prompt)
-    response = agent_executor.invoke({"input": hw02_system_prompt})
-    print("reply 1: " + str(response))
-    # TODO response only contains output from tool instead of LLM's output.
-    return "generate_hw02 return stub"
+    agent_executor = AgentExecutor(agent=agent, tools=tools)
+    intput = hw02_system_prompt + "\n MY QUESTION IS: " + question
+    return agent_executor.invoke({"input": intput})["output"]
 
 
 def generate_hw03(question2, question3):
@@ -162,8 +142,8 @@ def demo(question):
 
 
 if __name__ == "__main__":
-    print("main function start")
+    print("====main function start====")
     # print(generate_hw01("2024年台灣10月紀念日有哪些?"))
     # print(getHolidaysFromRemoteApi(2023, 10))
-    print(generate_hw02("2024年台灣10月紀念日有哪些?"))
-    print("main function ends")
+    print(generate_hw02("2022年台灣10月紀念日有哪些?"))
+    print("====main function ends====")
