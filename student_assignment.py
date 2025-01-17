@@ -53,9 +53,13 @@ Please reply my questions.
 Format requirement:
 - Replay in Traditional Chinese (zh-TW)
 - Reply in JSON format.
-- The JSON format is `{"Result":{"score":"integer: score you read from the given input"}}`
+- The JSON format is {format}
 - Format the JSON output with indent of 4 spaces
 - REPLY JSON ONLY. DO NOT REPLY WITH MARKDOWN CODE BLOCK SYNTEX.
+"""
+
+hw04_format = """
+`{"Result":{"score":"integer: score you read from the given input"}}`
 """
 
 
@@ -217,8 +221,8 @@ def generate_hw04(question):
             ("human", "{question}"),
         ]
     )
-    response = llm.invoke(prompt.format(question=question))
-    print(response)
+    response = llm.invoke(prompt.format_messages(question=question, format=hw04_format))
+    return response.content
 
 
 def demo(question):
@@ -242,5 +246,5 @@ if __name__ == "__main__":
     #         """根據先前的節日清單，這個節日{"date": "10-31", "name": "蔣公誕辰紀念日"}是否有在該月份清單？""",
     #     )
     # )
-    print(generate_hw04("請問中華台北的積分是多少"))
+    # print(generate_hw04("請問中華台北的積分是多少"))
     print("====main function ends====")
