@@ -21,14 +21,7 @@ from langchain_core.callbacks import (
 
 gpt_chat_version = "gpt-4o"
 gpt_config = get_model_configuration(gpt_chat_version)
-llm = AzureChatOpenAI(
-    model=gpt_config["model_name"],
-    deployment_name=gpt_config["deployment_name"],
-    openai_api_key=gpt_config["api_key"],
-    openai_api_version=gpt_config["api_version"],
-    azure_endpoint=gpt_config["api_base"],
-    temperature=gpt_config["temperature"],
-)
+
 
 hw01_system_prompt = """
 You are a calendar info provider, reply the info I asked, and reply in the requested format.
@@ -55,6 +48,14 @@ Format requirement:
 
 
 def generate_hw01(question):
+    llm = AzureChatOpenAI(
+        model=gpt_config["model_name"],
+        deployment_name=gpt_config["deployment_name"],
+        openai_api_key=gpt_config["api_key"],
+        openai_api_version=gpt_config["api_version"],
+        azure_endpoint=gpt_config["api_base"],
+        temperature=gpt_config["temperature"],
+    )
     prompt = ChatPromptTemplate.from_messages(
         [("system", hw01_system_prompt), ("human", "{question}")]
     )
@@ -65,8 +66,8 @@ def generate_hw01(question):
 
 
 class HolidayApiInput(BaseModel):
-    year: str = Field(description="year")
-    month: str = Field(description="month")
+    year: str = Field(description="year of the request holiday info")
+    month: str = Field(description="month of the request holiday info")
 
 
 # Note: It's important that every field has type hints. BaseTool is a
@@ -107,6 +108,8 @@ def getHolidaysFromRemoteApi(year: str, month: str) -> str:
     api_end_point = f"https://calendarific.com/api/v2/holidays?&api_key={api_key}&country=tw&year={year}&month={month}"
     api_end_point.format()
     json_responce = requests.get(api_end_point).json()
+    # if True:  # debug: no extra formatting
+    # return str(json_responce)
     result = []
     for holiday in json_responce["response"]["holidays"]:
         result.append({"name": holiday["name"], "date": holiday["date"]["iso"]})
@@ -114,20 +117,28 @@ def getHolidaysFromRemoteApi(year: str, month: str) -> str:
 
 
 def generate_hw02(question):
+    llm = AzureChatOpenAI(
+        model=gpt_config["model_name"],
+        deployment_name=gpt_config["deployment_name"],
+        openai_api_key=gpt_config["api_key"],
+        openai_api_version=gpt_config["api_version"],
+        azure_endpoint=gpt_config["api_base"],
+        temperature=gpt_config["temperature"],
+    )
     tools = [HolidayApiTool()]
-    # llm_with_tool = llm.bind_tools(tools)
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", hw02_system_prompt),
+            ("system", "You are a helpful assistant"),
             ("placeholder", "{chat_history}"),
             ("human", "{input}"),
             ("placeholder", "{agent_scratchpad}"),
+            ("human", "{input}"),
         ]
     )
     agent = create_openai_functions_agent(llm=llm, tools=tools, prompt=prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, prompt=prompt)
-    response = agent_executor.invoke({"input": f"{question}"})
-    print(response)
+    response = agent_executor.invoke({"input": hw02_system_prompt})
+    print("reply 1: " + str(response))
     # TODO response only contains output from tool instead of LLM's output.
     return "generate_hw02 return stub"
 
