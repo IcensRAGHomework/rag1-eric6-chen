@@ -83,7 +83,7 @@ class HolidayApiTool(BaseTool):
         month: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
-        return getHolidaysFromRemoteApi(year, month)
+        return "result of the remote api is: " + getHolidaysFromRemoteApi(year, month)
 
     async def _arun(
         self,
@@ -121,16 +121,17 @@ def generate_hw02(question):
             ("system", hw02_system_prompt),
             ("placeholder", "{chat_history}"),
             ("human", "{input}"),
+            ("assistant", "Let me check..."),
             ("placeholder", "{agent_scratchpad}"),
-            ("assistant", "{{llm_output}}"),
+            ("assistant", "Here is what i found: "),
         ]
     )
     agent = create_openai_functions_agent(llm, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, prompt=prompt)
     response = agent_executor.invoke({"input": f"{question}"})
     print(response)
     # TODO response only contains output from tool instead of LLM's output.
-    return "STUB"
+    return "generate_hw02 return stub"
 
 
 def generate_hw03(question2, question3):
