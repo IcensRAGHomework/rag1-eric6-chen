@@ -100,10 +100,10 @@ def getHolidaysFromRemoteApi(year: str, month: str) -> str:
     Request holiday info from remote API and make it a eazy format for LLM to take as input.
     return: json `{"Result":[{"date":"YYYY-MM-DD","name":"(name of the day)"}]}`
     """
-    if True:  # debugging
+    if False:  # debugging
         return "getHolidaysFromRemoteApi stub"
     # key will be dispose once result is pass.
-    api_key = "XXXXXXXXXXXXXXXXXXXXXX"
+    api_key = "A6tmd6HZ5QaEwBwINmO2f0TTrd3rSVUq"
     api_end_point = f"https://calendarific.com/api/v2/holidays?&api_key={api_key}&country=tw&year={year}&month={month}"
     api_end_point.format()
     json_responce = requests.get(api_end_point).json()
@@ -115,18 +115,16 @@ def getHolidaysFromRemoteApi(year: str, month: str) -> str:
 
 def generate_hw02(question):
     tools = [HolidayApiTool()]
-    llm_with_tool = llm.bind_tools(tools)
+    # llm_with_tool = llm.bind_tools(tools)
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", hw02_system_prompt),
             ("placeholder", "{chat_history}"),
             ("human", "{input}"),
-            ("assistant", "Let me check..."),
             ("placeholder", "{agent_scratchpad}"),
-            ("assistant", "Here is what i found: "),
         ]
     )
-    agent = create_openai_functions_agent(llm, tools, prompt)
+    agent = create_openai_functions_agent(llm=llm, tools=tools, prompt=prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, prompt=prompt)
     response = agent_executor.invoke({"input": f"{question}"})
     print(response)
